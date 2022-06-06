@@ -10,10 +10,16 @@ from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-start_page = 17000
+start_page = 400
 
+
+links = iter([
+        f"https://www.houzz.co.uk/photos/budget--%24%24%24/query/exterior/p/",
+        f"https://www.houzz.co.uk/photos/budget--%24%24/query/exterior/p/",
+        f"https://www.houzz.co.uk/photos/budget--%24/query/exterior/p/"
+        ])
 driver = webdriver.Firefox()
-driver.get(f"https://www.houzz.co.uk/photos/query/exterior/p/{start_page}")
+driver.get(f"{next(links)}{start_page}")
 print("Loading web page...")
 # WebDriverWait(driver, 1000000).until(EC.element_to_be_clickable((By.XPATH, '//button[text()="Newly Featured"]'))).click()
 
@@ -36,35 +42,34 @@ def save_soup(to_file=False):
 
 scroll_height = driver.execute_script("return document.body.scrollHeight;")
 goal = 24980
-prev_pos = -20
 i = 0
-last_refresh = i
 prev_count = len(card_links)
 no_progress = 0
 with tqdm(total=goal) as pbar:
     while len(card_links) < goal:
         driver.execute_script(f"window.scrollTo(0, {scroll_height}*{i});")
         current_pos = driver.execute_script(f"return window.scrollY;")
-        if(abs(current_pos - prev_pos) < 10) or no_progress > 5 or (i - last_refresh > 200):
-            no_progress = 0
-            last_refresh = i
-            driver.get(f"https://www.houzz.co.uk/photos/query/exterior/p/{start_page+i}")
-            prev_pos = -20
-            time.sleep(5)
-        else:
-            prev_pos = current_pos
-            time.sleep(1)
+        # driver.get(f"https://www.houzz.co.uk/photos/query/exterior/p/{start_page+i*20}")
+        time.sleep(1)
 
         if (len(card_links) - prev_count) > 20:
-            pbar.n = len(card_links)
             prev_count = len(card_links)
             save_soup(to_file=True)
-            pbar.refresh()
             no_progress = 0
-        elif len(card_links) == prev_count:
+        elif no_progress > 7:
+            no_progress = 0
+            driver.get(f"{next(links)}/0")
+            time.sleep(1)
+        else:
+            save_soup()
             no_progress += 1
-        save_soup()
+
+
+
+        pbar.n = len(card_links)
+        pbar.refresh()
         i += 1
+
 save_soup(to_file=True)
 driver.close()
 driver.quit()

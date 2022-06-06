@@ -13,7 +13,7 @@ parser.add_argument('--offset', type=int, default=0)
 args = parser.parse_args()
 
 offset = args.offset
-if args.offset == 0:
+if args.offset == -1:
     offset = max([int(f[:f.index('.')]) for f in os.listdir('./scraped/')]) + 1
 print(offset)
 card_urls = set()
@@ -31,9 +31,12 @@ pages = grequests.imap(reqs, size=16)
 jpg_urls = set()
 for page in tqdm(pages, total=len(card_urls)):
     soup = BeautifulSoup(page.content, 'html.parser')
-    content = json.loads(soup.find('script', {'type': 'application/ld+json'}).decode_contents())
-    jpg_urls.add(content[0]['contentURL'])
-    tqdm.write(content[0]['contentURL'])
+    try:
+        content = json.loads(soup.find('script', {'type': 'application/ld+json'}).decode_contents())
+        jpg_urls.add(content[0]['contentURL'])
+        tqdm.write(content[0]['contentURL'])
+    except:
+        print("Skipping ", page.url)
 
 jpg_urls = jpg_urls - scraped_jpg_urls
 
